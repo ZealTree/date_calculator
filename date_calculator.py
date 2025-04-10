@@ -1,157 +1,108 @@
 import sys
+from dateutil.relativedelta import relativedelta
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel,
                             QDateEdit, QTimeEdit, QPushButton, QHBoxLayout,
-                            QCheckBox, QTabWidget)
+                            QTableWidget, QTableWidgetItem, QHeaderView)
 from PyQt6.QtCore import QDate, QTime, Qt
 from datetime import datetime
 
-class DateDifferenceCalculator(QWidget):
+class DateTimeCalculator(QWidget):
     def __init__(self):
         super().__init__()
         self.initUI()
 
     def initUI(self):
         self.setWindowTitle('Калькулятор времени')
-        self.setGeometry(300, 300, 450, 400)
+        self.setGeometry(300, 300, 700, 300)
 
-        # Создание вкладок
-        tabs = QTabWidget()
-        self.tab_countdown = QWidget()
-        self.tab_elapsed = QWidget()
-        tabs.addTab(self.tab_countdown, "До события")
-        tabs.addTab(self.tab_elapsed, "Прошедшее время")
-
-        # Вкладка "До события"
-        self.setup_countdown_tab()
-
-        # Вкладка "Прошедшее время"
-        self.setup_elapsed_tab()
-
-        # Основной layout
         main_layout = QVBoxLayout()
-        main_layout.addWidget(tabs)
-        self.setLayout(main_layout)
+        main_layout.setSpacing(10)
 
-    def setup_countdown_tab(self):
-        layout = QVBoxLayout()
-
-        # Дата
-        self.countdown_date_label = QLabel('Выберите дату:')
-        self.countdown_date_edit = QDateEdit()
-        self.countdown_date_edit.setCalendarPopup(True)
-        self.countdown_date_edit.setDate(QDate.currentDate())
-        self.countdown_date_edit.setMinimumDate(QDate.currentDate())
-
-        # Время
-        self.countdown_time_label = QLabel('Выберите время:')
-        self.countdown_time_edit = QTimeEdit()
-        self.countdown_time_edit.setDisplayFormat("HH:mm")
-        self.countdown_time_edit.setTime(QTime.currentTime())
-
-        datetime_layout = QHBoxLayout()
-        datetime_layout.addWidget(self.countdown_date_edit)
-        datetime_layout.addWidget(self.countdown_time_edit)
-
-        self.countdown_button = QPushButton('Рассчитать')
-        self.countdown_button.clicked.connect(self.calculate_countdown)
-
-        self.countdown_result = QLabel('Результат появится здесь')
-        self.countdown_result.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        layout.addWidget(self.countdown_date_label)
-        layout.addLayout(datetime_layout)
-        layout.addWidget(self.countdown_time_label)
-        layout.addWidget(self.countdown_button)
-        layout.addWidget(self.countdown_result)
-        layout.addStretch()
-
-        self.tab_countdown.setLayout(layout)
-
-    def setup_elapsed_tab(self):
-        layout = QVBoxLayout()
-
-        # Начальная дата
-        self.start_date_label = QLabel('Начальная дата:')
+        # Начало отсчета
+        start_layout = QHBoxLayout()
+        start_label = QLabel('Начало отсчета:')
         self.start_date_edit = QDateEdit()
         self.start_date_edit.setCalendarPopup(True)
         self.start_date_edit.setDate(QDate.currentDate())
-
         self.start_time_edit = QTimeEdit()
         self.start_time_edit.setDisplayFormat("HH:mm")
         self.start_time_edit.setTime(QTime.currentTime())
+        
+        start_now_btn = QPushButton('Сейчас')
+        start_now_btn.clicked.connect(lambda: self.set_current_datetime(self.start_date_edit, self.start_time_edit))
+        
+        start_layout.addWidget(start_label)
+        start_layout.addWidget(self.start_date_edit)
+        start_layout.addWidget(self.start_time_edit)
+        start_layout.addWidget(start_now_btn)
 
-        start_datetime_layout = QHBoxLayout()
-        start_datetime_layout.addWidget(self.start_date_edit)
-        start_datetime_layout.addWidget(self.start_time_edit)
-
-        # Конечная дата
-        self.end_date_label = QLabel('Конечная дата:')
+        # Конец отсчета
+        end_layout = QHBoxLayout()
+        end_label = QLabel('Конец отсчета:')
         self.end_date_edit = QDateEdit()
         self.end_date_edit.setCalendarPopup(True)
         self.end_date_edit.setDate(QDate.currentDate())
-
         self.end_time_edit = QTimeEdit()
         self.end_time_edit.setDisplayFormat("HH:mm")
         self.end_time_edit.setTime(QTime.currentTime())
+        
+        end_now_btn = QPushButton('Сейчас')
+        end_now_btn.clicked.connect(lambda: self.set_current_datetime(self.end_date_edit, self.end_time_edit))
+        
+        end_layout.addWidget(end_label)
+        end_layout.addWidget(self.end_date_edit)
+        end_layout.addWidget(self.end_time_edit)
+        end_layout.addWidget(end_now_btn)
 
-        self.use_current_checkbox = QCheckBox('Использовать текущее время как конечное')
-        self.use_current_checkbox.stateChanged.connect(self.toggle_end_datetime)
+        # Кнопка расчета
+        calculate_btn = QPushButton('Рассчитать разницу')
+        calculate_btn.clicked.connect(self.calculate_difference)
 
-        end_datetime_layout = QHBoxLayout()
-        end_datetime_layout.addWidget(self.end_date_edit)
-        end_datetime_layout.addWidget(self.end_time_edit)
+        # Таблица результатов
+        self.result_table = QTableWidget()
+        self.result_table.setColumnCount(6)
+        self.result_table.setHorizontalHeaderLabels(['Годы', 'Месяцы', 'Дни', 'Часы', 'Минуты', 'Секунды'])
+        self.result_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.result_table.setRowCount(1)
+        self.result_table.verticalHeader().setVisible(False)
+        
+        # Настраиваем стиль таблицы
+        self.result_table.setStyleSheet("""
+            QTableWidget {
+                border: 1px solid #ddd;
+                font-size: 14px;
+            }
+            QHeaderView::section {
+                background-color: #f0f0f0;
+                padding: 5px;
+                border: none;
+            }
+        """)
 
-        self.elapsed_button = QPushButton('Рассчитать')
-        self.elapsed_button.clicked.connect(self.calculate_elapsed)
+        # Добавляем все в основной layout
+        main_layout.addLayout(start_layout)
+        main_layout.addLayout(end_layout)
+        main_layout.addWidget(calculate_btn)
+        main_layout.addWidget(QLabel('Результат:'))
+        main_layout.addWidget(self.result_table)
 
-        self.elapsed_result = QLabel('Результат появится здесь')
-        self.elapsed_result.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setLayout(main_layout)
 
-        layout.addWidget(self.start_date_label)
-        layout.addLayout(start_datetime_layout)
-        layout.addWidget(self.end_date_label)
-        layout.addLayout(end_datetime_layout)
-        layout.addWidget(self.use_current_checkbox)
-        layout.addWidget(self.elapsed_button)
-        layout.addWidget(self.elapsed_result)
-        layout.addStretch()
+    def set_current_datetime(self, date_edit, time_edit):
+        date_edit.setDate(QDate.currentDate())
+        time_edit.setTime(QTime.currentTime())
 
-        self.tab_elapsed.setLayout(layout)
+    def calculate_difference(self):
+        try:
+            # Получаем начальную дату и время
+            start_qdate = self.start_date_edit.date()
+            start_qtime = self.start_time_edit.time()
+            start_datetime = datetime(
+                start_qdate.year(), start_qdate.month(), start_qdate.day(),
+                start_qtime.hour(), start_qtime.minute()
+            )
 
-    def toggle_end_datetime(self, state):
-        # Включение/отключение полей конечной даты и времени
-        self.end_date_edit.setEnabled(not state)
-        self.end_time_edit.setEnabled(not state)
-
-    def calculate_countdown(self):
-        qdate = self.countdown_date_edit.date()
-        qtime = self.countdown_time_edit.time()
-        selected_datetime = datetime(
-            qdate.year(), qdate.month(), qdate.day(),
-            qtime.hour(), qtime.minute()
-        )
-        current_datetime = datetime.now()
-
-        if selected_datetime <= current_datetime:
-            self.countdown_result.setText('Пожалуйста, выберите дату и время в будущем!')
-            return
-
-        difference = selected_datetime - current_datetime
-        self.display_result(difference, selected_datetime, self.countdown_result, "До")
-
-    def calculate_elapsed(self):
-        # Начальная дата и время
-        start_qdate = self.start_date_edit.date()
-        start_qtime = self.start_time_edit.time()
-        start_datetime = datetime(
-            start_qdate.year(), start_qdate.month(), start_qdate.day(),
-            start_qtime.hour(), start_qtime.minute()
-        )
-
-        # Конечная дата и время
-        if self.use_current_checkbox.isChecked():
-            end_datetime = datetime.now()
-        else:
+            # Получаем конечную дату и время
             end_qdate = self.end_date_edit.date()
             end_qtime = self.end_time_edit.time()
             end_datetime = datetime(
@@ -159,40 +110,33 @@ class DateDifferenceCalculator(QWidget):
                 end_qtime.hour(), end_qtime.minute()
             )
 
-        if end_datetime <= start_datetime:
-            self.elapsed_result.setText('Конечная дата должна быть позже начальной!')
-            return
+            # Для удобства: всегда считаем от меньшей даты к большей
+            if start_datetime > end_datetime:
+                start_datetime, end_datetime = end_datetime, start_datetime
 
-        difference = end_datetime - start_datetime
-        self.display_result(difference, end_datetime, self.elapsed_result, "Между", start_datetime)
+            # Вычисляем точную разницу с помощью relativedelta
+            delta = relativedelta(end_datetime, start_datetime)
 
-    def display_result(self, difference, end_datetime, result_label, prefix, start_datetime=None):
-        total_seconds = int(difference.total_seconds())
-        years = difference.days // 365
-        months = difference.days // 30
-        days = difference.days
-        hours = total_seconds // 3600
-        minutes = total_seconds // 60
-        seconds = total_seconds
+            # Обновляем таблицу результатов
+            self.update_table_cell(0, 0, str(delta.years))
+            self.update_table_cell(0, 1, str(delta.months))
+            self.update_table_cell(0, 2, str(delta.days))
+            self.update_table_cell(0, 3, str(delta.hours))
+            self.update_table_cell(0, 4, str(delta.minutes))
+            self.update_table_cell(0, 5, str(delta.seconds))
 
-        if start_datetime:
-            result_text = (f'{prefix} {start_datetime.strftime("%d.%m.%Y %H:%M")} и '
-                          f'{end_datetime.strftime("%d.%m.%Y %H:%M")} прошло:\n')
-        else:
-            result_text = f'{prefix} {end_datetime.strftime("%d.%m.%Y %H:%M")} осталось:\n'
+        except Exception as e:
+            print(f"Ошибка при расчете: {e}")
 
-        result_text += (f'Лет: {years}\n'
-                       f'Месяцев: {months}\n'
-                       f'Дней: {days}\n'
-                       f'Часов: {hours}\n'
-                       f'Минут: {minutes}\n'
-                       f'Секунд: {seconds}')
 
-        result_label.setText(result_text)
+    def update_table_cell(self, row, col, value):
+        item = QTableWidgetItem(value)
+        item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.result_table.setItem(row, col, item)
 
 def main():
     app = QApplication(sys.argv)
-    window = DateDifferenceCalculator()
+    window = DateTimeCalculator()
     window.show()
     sys.exit(app.exec())
 

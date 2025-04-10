@@ -1,0 +1,15 @@
+old.build.spec
+build/build/Analysis-00.toc
+build/build/base_library.zip
+build/build/date_calculator.pkg
+build/build/EXE-00.toc
+build/build/PKG-00.toc
+build/build/PYZ-00.pyz
+build/build/PYZ-00.toc
+build/build/warn-build.txt
+build/build/xref-build.html
+build/build/localpycs/pyimod01_archive.pyc
+build/build/localpycs/pyimod02_importers.pyc
+build/build/localpycs/pyimod03_ctypes.pyc
+build/build/localpycs/pyimod04_pywin32.pyc
+build/build/localpycs/struct.pyc
