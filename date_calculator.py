@@ -4,6 +4,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel,
                             QDateEdit, QTimeEdit, QPushButton, QHBoxLayout,
                             QTableWidget, QTableWidgetItem, QHeaderView)
 from PyQt6.QtCore import QDate, QTime, Qt
+from PyQt6.QtGui import QIcon
 from datetime import datetime
 
 class DateTimeCalculator(QWidget):
@@ -14,6 +15,8 @@ class DateTimeCalculator(QWidget):
     def initUI(self):
         self.setWindowTitle('Калькулятор времени')
         self.setGeometry(300, 300, 700, 300)
+        # Set the window icon
+        self.setWindowIcon(QIcon('assets/icon.ico'))
 
         main_layout = QVBoxLayout()
         main_layout.setSpacing(10)
@@ -127,7 +130,6 @@ class DateTimeCalculator(QWidget):
 
         except Exception as e:
             print(f"Ошибка при расчете: {e}")
-
 
     def update_table_cell(self, row, col, value):
         item = QTableWidgetItem(value)
